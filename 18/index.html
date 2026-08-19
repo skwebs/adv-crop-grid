@@ -44,12 +44,6 @@ button,input,select{font-family:inherit}button{line-height:1}
  #imageTray.mobile-hidden{display:none}
  #imageTrayToggle{display:block;position:absolute;z-index:56;left:8px;bottom:104px;height:30px;border:1px solid #d1d5db;border-radius:6px;background:rgba(255,255,255,.96);padding:0 9px;font-size:10px;font-weight:600;box-shadow:0 5px 14px rgba(0,0,0,.12)}
 }
-
-#emptyState.hidden{display:none}
-#imageTray{max-width:min(92vw,760px)}
-@media(max-width:700px){
- #emptyState>div{max-width:calc(100vw - 32px);text-align:center}
-}
 </style>
 </head>
 <body>
@@ -57,7 +51,13 @@ button,input,select{font-family:inherit}button{line-height:1}
 <div id="viewport"><canvas id="viewportCanvas"></canvas></div>
 <div id="topRuler"></div><div id="leftRuler"></div><div id="rulerCorner"></div>
 
-
+<header class="absolute left-10 top-10 z-50 flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white/95 p-1.5 shadow-lg">
+  <div class="px-1 text-xs font-semibold max-sm:hidden">RC Crop Print</div>
+  <label class="flex h-8 cursor-pointer items-center justify-center rounded-md border border-gray-300 bg-white px-2.5 text-[11px] font-semibold leading-none text-gray-800 hover:bg-gray-100">
+    Upload Images
+    <input id="sourceInput" type="file" accept="image/jpeg,image/png,image/webp" multiple class="hidden">
+  </label>
+</header>
 
 <aside id="layoutPanel" class="absolute right-3.5 top-10 z-50 w-48 rounded-lg border border-gray-300 bg-white p-2.5 shadow-xl max-sm:top-[84px] max-sm:right-2">
  <div class="mb-2 flex items-center justify-between">
@@ -116,27 +116,16 @@ button,input,select{font-family:inherit}button{line-height:1}
 <div id="imageTray" class="hidden"><div id="thumbnailList"></div></div>
 <button id="imageTrayToggle" type="button">Images</button>
 
-<div id="emptyState" class="absolute inset-0 z-40 flex items-center justify-center pointer-events-none">
-  <div class="pointer-events-auto flex flex-col items-center gap-2 rounded-xl border border-gray-300 bg-white/96 px-5 py-4 shadow-xl">
-    <div class="text-sm font-semibold text-gray-800">Upload image to begin</div>
-    <div class="text-[10px] text-gray-500">Select one or more photos to create a print grid</div>
-    <label class="flex h-9 cursor-pointer items-center justify-center rounded-md border border-gray-900 bg-gray-900 px-4 text-[11px] font-semibold text-white hover:bg-gray-800">
-      Upload Image
-      <input id="emptyUploadInput" type="file" accept="image/jpeg,image/png,image/webp" multiple class="hidden">
-    </label>
-  </div>
-</div>
-
 <div id="status" class="pointer-events-none absolute bottom-4 left-10 z-40 rounded-md border border-gray-300 bg-white/95 px-2 py-1.5 text-[10px] leading-none text-gray-600 max-sm:hidden">Upload an image</div>
 
-<div class="absolute bottom-3 left-1/2 z-[60] flex w-[calc(100vw-16px)] max-w-200 -translate-x-1/2 items-center rounded-lg border border-gray-300 bg-white/96 p-1 shadow-xl">
- <div class="mx-auto flex items-center gap-0.5 overflow-x-auto">
-  <button id="zoomOut" class="h-7 w-7 shrink-0 rounded-[5px] border border-gray-300 bg-white text-xs">−</button>
-  <input id="zoomText" type="text" inputmode="decimal" value="100%" aria-label="Zoom percentage" class="h-7 w-12 shrink-0 rounded-[5px] border border-gray-300 bg-white px-1 text-center text-[10px] font-semibold outline-none">
-  <button id="zoomIn" class="h-7 w-7 shrink-0 rounded-[5px] border border-gray-300 bg-white text-xs">+</button>
+<div class="absolute bottom-3 left-1/2 z-[60] flex w-[calc(100vw-16px)] max-w-200 -translate-x-1/2 items-center rounded-lg border border-gray-300 bg-white/96 p-1.5 shadow-xl">
+ <div class="mx-auto flex items-center gap-1 overflow-x-auto">
+  <button id="zoomOut" class="h-8 w-8 shrink-0 rounded-md border border-gray-300 bg-white text-sm">−</button>
+  <span id="zoomText" class="min-w-12.5 shrink-0 text-center text-[10px] font-semibold">100%</span>
+  <button id="zoomIn" class="h-8 w-8 shrink-0 rounded-md border border-gray-300 bg-white text-sm">+</button>
   <button id="fitButton" class="h-8 shrink-0 rounded-md border border-gray-300 bg-white px-2 text-[10px] font-semibold">Fit</button>
   <button id="actualButton" class="h-8 shrink-0 rounded-md border border-gray-300 bg-white px-2 text-[10px] font-semibold">100%</button>
-  <select id="rulerUnit" class="h-8 shrink-0 rounded-md border border-gray-300 bg-white px-1.5 text-[10px] font-semibold"><option value="in">in</option><option value="cm">cm</option><option value="mm">mm</option><option value="px">px</option></select>
+  <select id="rulerUnit" class="h-8 shrink-0 rounded-md border border-gray-300 bg-white px-1.5 text-[10px] font-semibold"><option value="in">in</option><option value="cm">cm</option><option value="mm">mm</option></select>
   <button id="layoutButton" class="h-8 shrink-0 rounded-md border border-gray-300 bg-white px-2 text-[10px] font-semibold">Layout</button>
  </div>
  <button id="downloadButton" class="ml-1 h-8 shrink-0 rounded-md border border-gray-300 bg-white px-2.5 text-[10px] font-semibold">Download</button>
@@ -168,7 +157,7 @@ const topRuler=$("topRuler"),leftRuler=$("leftRuler"),sourceInput=$("sourceInput
 const layoutPanel=$("layoutPanel"),showLayoutButton=$("showLayoutButton"),closeLayoutButton=$("closeLayoutButton"),layoutButton=$("layoutButton");
 const paperSize=$("paperSize"),ppiSelect=$("ppi"),rowsInput=$("rows"),columnsInput=$("columns"),slotColor=$("slotColor"),slotColorText=$("slotColorText");
 const portraitButton=$("portraitButton"),landscapeButton=$("landscapeButton"),rotateImageButton=$("rotateImageButton"),rotateText=$("rotateText");
-const zoomText=$("zoomText"),status=$("status"),downloadButton=$("downloadButton"),rulerUnitSelect=$("rulerUnit"),emptyState=$("emptyState"),emptyUploadInput=$("emptyUploadInput");
+const zoomText=$("zoomText"),status=$("status"),downloadButton=$("downloadButton"),rulerUnitSelect=$("rulerUnit");
 const imageTray=$("imageTray"),thumbnailList=$("thumbnailList"),imageTrayToggle=$("imageTrayToggle"),saveSettingsToggle=$("saveSettingsToggle");
 const cropModal=$("cropModal"),cropImage=$("cropImage"),cropApply=$("cropApply"),cropCancel=$("cropCancel"),cropRotateLeft=$("cropRotateLeft"),cropRotateRight=$("cropRotateRight");
 const ratioButtons=document.querySelectorAll(".ratioButton");
@@ -178,7 +167,6 @@ let ppi=DEFAULT_PPI;
 const PAPER_INCHES={A4:[8.27,11.69],"4x6":[4,6],"5x7":[5,7]};
 const layout={paper:"A4",landscape:false,slotColor:"#ffffff",gap:40};
 const camera={x:0,y:0,zoom:1};
-function setZoomDisplay(){zoomText.value=Math.round(camera.zoom*100)+"%"}
 let dpr=devicePixelRatio||1,vw=0,vh=0;
 let images=[],activeImageId=null,nextId=1,cropper=null,cropImageId=null,cropObjectUrl=null;
 let sheetCanvas=null,hasSheet=false,updateTimer=null,rulerUnit="in",layoutVisible=!matchMedia("(max-width:700px)").matches;
@@ -209,16 +197,16 @@ function rulerStep(){const target=80/camera.zoom/getPPU();for(const x of [.01,.0
 function fmt(v){return Number(v.toFixed(rulerUnit==="mm"?1:2)).toString()}
 function worldToScreen(x,y){return{x:x*camera.zoom+camera.x,y:y*camera.zoom+camera.y}}
 function screenToWorld(x,y){return{x:(x-camera.x)/camera.zoom,y:(y-camera.y)/camera.zoom}}
-function zoomAt(x,y,z){z=clamp(z,MIN_ZOOM,MAX_ZOOM);const w=screenToWorld(x,y);camera.zoom=z;camera.x=x-w.x*z;camera.y=y-w.y*z;setZoomDisplay();render()}
+function zoomAt(x,y,z){z=clamp(z,MIN_ZOOM,MAX_ZOOM);const w=screenToWorld(x,y);camera.zoom=z;camera.x=x-w.x*z;camera.y=y-w.y*z;zoomText.textContent=Math.round(z*100)+"%";render()}
 function zoomBy(f,x=vw/2,y=vh/2){zoomAt(x,y,camera.zoom*f)}
 function fit(){
  if(!sheetCanvas)return;
  const z=Math.min((vw-200)/sheetCanvas.width,(vh-200)/sheetCanvas.height);
- camera.zoom=clamp(z,MIN_ZOOM,MAX_ZOOM);camera.x=(vw-sheetCanvas.width*camera.zoom)/2;camera.y=(vh-sheetCanvas.height*camera.zoom)/2;setZoomDisplay();render()
+ camera.zoom=clamp(z,MIN_ZOOM,MAX_ZOOM);camera.x=(vw-sheetCanvas.width*camera.zoom)/2;camera.y=(vh-sheetCanvas.height*camera.zoom)/2;zoomText.textContent=Math.round(camera.zoom*100)+"%";render()
 }
 function actual(){
  if(!sheetCanvas)return;
- camera.zoom=1;camera.x=(vw-sheetCanvas.width)/2;camera.y=(vh-sheetCanvas.height)/2;setZoomDisplay();render()
+ camera.zoom=1;camera.x=(vw-sheetCanvas.width)/2;camera.y=(vh-sheetCanvas.height)/2;zoomText.textContent="100%";render()
 }
 
 function syncActive(){
@@ -233,72 +221,21 @@ function setActive(id){
  if(active()?.croppedCanvas)generateSheet();else{sheetCanvas=null;render()}
 }
 function renderThumbs(){
- if(images.length===0){
-   imageTray.classList.add("hidden");
-   imageTrayToggle.classList.add("hidden");
-   thumbnailList.replaceChildren();
-   return;
- }
- imageTray.classList.remove("hidden");
- imageTrayToggle.classList.remove("hidden");
- thumbnailList.replaceChildren();
-
+ if(images.length<2){imageTray.classList.add("hidden");imageTrayToggle.classList.add("hidden");thumbnailList.replaceChildren();return}
+ imageTray.classList.remove("hidden");imageTrayToggle.classList.remove("hidden");thumbnailList.replaceChildren();
  images.forEach((im,index)=>{
-  const item=document.createElement("div");
-  item.className="image-thumb"+(im.id===activeImageId?" active":"")+(im.visible?"":" hidden-image");
-
-  const preview=document.createElement("button");
-  preview.className="image-thumb-preview";
-  preview.type="button";
-
-  if(im.croppedCanvas){
-    const c=document.createElement("canvas");
-    c.width=72;c.height=72;
-    const t=c.getContext("2d"),d=dims(im),s=Math.min(68/d.width,68/d.height);
-    t.drawImage(im.croppedCanvas,(72-d.width*s)/2,(72-d.height*s)/2,d.width*s,d.height*s);
-    preview.appendChild(c);
-  }else{
-    const img=document.createElement("img");
-    img.src=im.sourceUrl;img.alt=im.name;
-    preview.appendChild(img);
-  }
-
+  const item=document.createElement("div");item.className="image-thumb"+(im.id===activeImageId?" active":"")+(im.visible?"":" hidden-image");
+  const preview=document.createElement("button");preview.className="image-thumb-preview";preview.type="button";
+  if(im.croppedCanvas){const c=document.createElement("canvas");c.width=72;c.height=72;const t=c.getContext("2d"),d=dims(im),s=Math.min(68/d.width,68/d.height);t.drawImage(im.croppedCanvas,(72-d.width*s)/2,(72-d.height*s)/2,d.width*s,d.height*s);preview.appendChild(c)}
+  else{const img=document.createElement("img");img.src=im.sourceUrl;img.alt=im.name;preview.appendChild(img)}
   preview.onclick=()=>setActive(im.id);
-
-  const n=document.createElement("span");
-  n.className="image-thumb-number";
-  n.textContent=index+1;
-
-  const crop=document.createElement("button");
-  crop.className="image-thumb-action image-thumb-crop";
-  crop.textContent="✎";crop.title="Crop";
-  crop.onclick=e=>{e.stopPropagation();openCrop(im.id)};
-
-  const vis=document.createElement("button");
-  vis.className="image-thumb-action image-thumb-visibility";
-  vis.textContent=im.visible?"◉":"○";
-  vis.title=im.visible?"Hide":"Show";
-  vis.onclick=e=>{
-    e.stopPropagation();
-    im.visible=!im.visible;
-    renderThumbs();
-    generateSheet();
-  };
-
-  const rem=document.createElement("button");
-  rem.className="image-thumb-action image-thumb-remove";
-  rem.textContent="×";rem.title="Remove";
-  rem.onclick=e=>{e.stopPropagation();removeImage(im.id)};
-
-  item.append(preview,n,crop,vis,rem);
-  thumbnailList.appendChild(item);
+  const n=document.createElement("span");n.className="image-thumb-number";n.textContent=index+1;
+  const crop=document.createElement("button");crop.className="image-thumb-action image-thumb-crop";crop.textContent="✎";crop.title="Crop";crop.onclick=e=>{e.stopPropagation();openCrop(im.id)};
+  const vis=document.createElement("button");vis.className="image-thumb-action image-thumb-visibility";vis.textContent=im.visible?"◉":"○";vis.title=im.visible?"Hide":"Show";vis.onclick=e=>{e.stopPropagation();im.visible=!im.visible;renderThumbs();generateSheet()};
+  const rem=document.createElement("button");rem.className="image-thumb-action image-thumb-remove";rem.textContent="×";rem.title="Remove";rem.onclick=e=>{e.stopPropagation();removeImage(im.id)};
+  item.append(preview,n,crop,vis,rem);thumbnailList.appendChild(item)
  });
-
- const add=document.createElement("label");
- add.className="image-thumb add-image-thumb";
- add.innerHTML='<span class="add-image-plus">+</span><span>Add</span>';
- add.onclick=()=>sourceInput.click();
- thumbnailList.appendChild(add);
+ const add=document.createElement("label");add.className="image-thumb add-image-thumb";add.innerHTML='<span class="add-image-plus">+</span><span>Add</span>';add.onclick=()=>sourceInput.click();thumbnailList.appendChild(add)
 }
 function removeImage(id){
  const n=images.findIndex(i=>i.id===id);if(n<0)return;const im=images[n];URL.revokeObjectURL(im.sourceUrl);images.splice(n,1);
@@ -334,18 +271,6 @@ function openCrop(id){
 }
 function closeCrop(){cropModal.classList.remove("visible");if(cropper){cropper.destroy();cropper=null}cropImageId=null}
 cropCancel.onclick=closeCrop;
-emptyUploadInput.onchange=e=>{
- const files=[...e.target.files];
- files.forEach(file=>{
-   const im=makeImage(file);
-   images.push(im);
-   if(activeImageId===null)activeImageId=im.id;
- });
- renderThumbs();
- const first=images[images.length-files.length];
- if(first)openCrop(first.id);
- e.target.value="";
-};
 sourceInput.onchange=e=>{
  [...e.target.files].forEach(file=>{const im=makeImage(file);images.push(im);if(activeImageId===null)activeImageId=im.id});
  renderThumbs();
@@ -380,33 +305,11 @@ function generateSheet(){
  }else{
   let cx=margin,cy=margin,rowH=0;
   for(const im of visible){
-   const d=dims(im);
-   const bw=im.columns*d.width+(im.columns-1)*gap;
-   const bh=im.rows*d.height+(im.rows-1)*gap;
-   const availableW=p.width-2*margin;
-   const availableH=p.height-2*margin;
-
-   // Never stretch or clip an image grid to the page. If a complete
-   // requested block cannot fit, start a new block row; if it is still
-   // physically larger than the page, skip it rather than rendering it
-   // as a page-filling/overflowing image.
-   if(bw>availableW||bh>availableH)continue;
-
-   if(cx!==margin&&cx+bw>p.width-margin){
-     cx=margin;
-     cy+=rowH+gap;
-     rowH=0;
-   }
-
+   const d=dims(im),bw=im.columns*d.width+(im.columns-1)*gap,bh=im.rows*d.height+(im.rows-1)*gap;
+   if(cx!==margin&&cx+bw>p.width-margin){cx=margin;cy+=rowH+gap;rowH=0}
    if(cy+bh<=p.height-margin){
-    for(let r=0;r<im.rows;r++){
-     for(let col=0;col<im.columns;col++){
-      const x=cx+col*(d.width+gap),y=cy+r*(d.height+gap);
-      drawCell(c,im,x,y,d.width,d.height);
-     }
-    }
-    cx+=bw+gap;
-    rowH=Math.max(rowH,bh);
+    for(let r=0;r<im.rows;r++)for(let col=0;col<im.columns;col++){const x=cx+col*(d.width+gap),y=cy+r*(d.height+gap);drawCell(c,im,x,y,d.width,d.height)}
+    cx+=bw+gap;rowH=Math.max(rowH,bh)
    }
   }
  }
@@ -421,30 +324,6 @@ function downloadJPEG(){
  sheetCanvas.toBlob(async blob=>{if(!blob)return;try{const dataUrl=await blobToDataURL(blob);const z={};z[piexif.ImageIFD.XResolution]=[ppi,1];z[piexif.ImageIFD.YResolution]=[ppi,1];z[piexif.ImageIFD.ResolutionUnit]=2;z[piexif.ImageIFD.Software]="RC Crop Print Studio";z[piexif.ImageIFD.ImageDescription]="Photo print grid created with RC Crop Print Studio";z[piexif.ImageIFD.Copyright]="© 2026 RC Crop Print Studio";const final=piexif.insert(piexif.dump({"0th":z,"Exif":{},"GPS":{},"1st":{},thumbnail:null}),dataUrl);const a=document.createElement("a");a.href=final;a.download=`crop-grid-print-${Date.now()}.jpg`;a.click()}catch(err){console.error(err);const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=`crop-grid-print-${Date.now()}.jpg`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}},"image/jpeg",.95)}
 downloadButton.onclick=downloadJPEG;
 
-ppiSelect.onchange=()=>{
- const next=Number(ppiSelect.value);
- if(![300,450,600].includes(next))return;
- ppi=next;
- persistSettings();
- images.forEach(im=>{
-   if(im.croppedCanvas){
-     const target=photoPixels();
-     const old=im.croppedCanvas;
-     const rotated=im.rotated;
-     const out=document.createElement("canvas");
-     out.width=rotated?target.height:target.width;
-     out.height=rotated?target.width:target.height;
-     const c=out.getContext("2d");
-     c.imageSmoothingEnabled=true;
-     c.imageSmoothingQuality="high";
-     c.drawImage(old,0,0,out.width,out.height);
-     im.croppedCanvas=out;
-   }
- });
- renderThumbs();
- schedule();
- updateStatus();
-};
 paperSize.onchange=()=>{layout.paper=paperSize.value;persistSettings();schedule()};
 slotColor.oninput=()=>{layout.slotColor=slotColor.value;slotColorText.textContent=slotColor.value;persistSettings();schedule()};
 portraitButton.onclick=()=>{layout.landscape=false;persistSettings();portraitButton.className="h-7.5 flex-1 rounded-[5px] border border-gray-900 bg-gray-900 px-1.5 text-[10px] text-white";landscapeButton.className="h-7.5 flex-1 rounded-[5px] border border-gray-300 bg-white px-1.5 text-[10px] text-gray-700";schedule()};
@@ -470,26 +349,6 @@ rowsInput.onblur=()=>commitInput(rowsInput,"rows");columnsInput.onblur=()=>commi
 $("rowsMinus").onclick=()=>stepInput(rowsInput,"rows",-1);$("rowsPlus").onclick=()=>stepInput(rowsInput,"rows",1);
 $("columnsMinus").onclick=()=>stepInput(columnsInput,"columns",-1);$("columnsPlus").onclick=()=>stepInput(columnsInput,"columns",1);
 
-zoomText.onfocus=()=>zoomText.select();
-zoomText.onkeydown=e=>{
- if(e.key!=="Enter")return;
- e.preventDefault();
- const value=parseFloat(String(zoomText.value).replace("%",""));
- if(Number.isFinite(value)){
-   camera.zoom=clamp(value/100,MIN_ZOOM,MAX_ZOOM);
-   setZoomDisplay();
-   render();
- }
- zoomText.blur();
-};
-zoomText.onblur=()=>{
- const value=parseFloat(String(zoomText.value).replace("%",""));
- if(Number.isFinite(value)){
-   camera.zoom=clamp(value/100,MIN_ZOOM,MAX_ZOOM);
- }
- setZoomDisplay();
- render();
-};
 rulerUnitSelect.onchange=()=>{rulerUnit=rulerUnitSelect.value;persistSettings();render()};
 closeLayoutButton.onclick=hideLayout;showLayoutButton.onclick=showLayout;layoutButton.onclick=()=>layoutVisible?hideLayout():showLayout();
 imageTrayToggle.onclick=()=>imageTray.classList.toggle("mobile-hidden");
@@ -502,170 +361,200 @@ function persistSettings(){
  try{localStorage.setItem(SETTINGS_KEY,JSON.stringify({version:4,paper:layout.paper,landscape:layout.landscape,slotColor:layout.slotColor,rulerUnit,ppi}))}catch{}
 }
 const saved=readSettings();if(saved){
- if(PAPER_INCHES[saved.paper])layout.paper=saved.paper;
+ if(PAPERS[saved.paper])layout.paper=saved.paper;
  layout.landscape=!!saved.landscape;
  if(/^#[0-9a-fA-F]{6}$/.test(saved.slotColor||""))layout.slotColor=saved.slotColor;
- if(["in","cm","mm","px"].includes(saved.rulerUnit))rulerUnit=saved.rulerUnit; if([300,450,600].includes(Number(saved.ppi)))ppi=Number(saved.ppi);
+ if(["in","cm","mm"].includes(saved.rulerUnit))rulerUnit=saved.rulerUnit; if([300,450,600].includes(Number(saved.ppi)))ppi=Number(saved.ppi);
 }
 saveSettingsEnabled=!!saved;saveSettingsToggle.checked=saveSettingsEnabled;
 saveSettingsToggle.onchange=()=>{saveSettingsEnabled=saveSettingsToggle.checked;if(saveSettingsEnabled)persistSettings();else localStorage.removeItem(SETTINGS_KEY)};
-paperSize.value=layout.paper;zoomText.value=Math.round(camera.zoom*100)+"%";slotColor.value=layout.slotColor;slotColorText.textContent=layout.slotColor;rulerUnitSelect.value=rulerUnit;ppiSelect.value=String(ppi);
+paperSize.value=layout.paper;slotColor.value=layout.slotColor;slotColorText.textContent=layout.slotColor;rulerUnitSelect.value=rulerUnit;ppiSelect.value=String(ppi);
 paperSize.addEventListener("change",persistSettings);slotColor.addEventListener("input",persistSettings);portraitButton.addEventListener("click",persistSettings);landscapeButton.addEventListener("click",persistSettings);
 
 function drawGrid(){
- const cfg=rulerConfig();
- if(!cfg)return;
-
- let stepWorld=cfg.p*cfg.minor;
- if(!Number.isFinite(stepWorld)||stepWorld<=0)return;
-
- // Keep the workspace grid readable at every zoom while retaining
- // the same physical subdivision represented by the ruler.
- while(stepWorld*camera.zoom<8)stepWorld*=2;
-
- const a=screenToWorld(0,0),b=screenToWorld(vw,vh);
- const sx=Math.floor(a.x/stepWorld)*stepWorld;
- const ex=Math.ceil(b.x/stepWorld)*stepWorld;
- const sy=Math.floor(a.y/stepWorld)*stepWorld;
- const ey=Math.ceil(b.y/stepWorld)*stepWorld;
-
- ctx.save();
- ctx.translate(camera.x,camera.y);
- ctx.scale(camera.zoom,camera.zoom);
- ctx.lineWidth=1/camera.zoom;
- ctx.strokeStyle="rgba(100,116,139,.10)";
-
- for(let x=sx;x<=ex;x+=stepWorld){
-   ctx.beginPath();ctx.moveTo(x,sy);ctx.lineTo(x,ey);ctx.stroke();
- }
- for(let y=sy;y<=ey;y+=stepWorld){
-   ctx.beginPath();ctx.moveTo(sx,y);ctx.lineTo(ex,y);ctx.stroke();
- }
- ctx.restore();
+ const s=32,a=screenToWorld(0,0),b=screenToWorld(vw,vh),sx=Math.floor(a.x/s)*s,ex=Math.ceil(b.x/s)*s,sy=Math.floor(a.y/s)*s,ey=Math.ceil(b.y/s)*s;
+ ctx.save();ctx.translate(camera.x,camera.y);ctx.scale(camera.zoom,camera.zoom);ctx.strokeStyle="rgba(100,116,139,.10)";ctx.lineWidth=1/camera.zoom;
+ for(let x=sx;x<=ex;x+=s){ctx.beginPath();ctx.moveTo(x,sy);ctx.lineTo(x,ey);ctx.stroke()}
+ for(let y=sy;y<=ey;y+=s){ctx.beginPath();ctx.moveTo(sx,y);ctx.lineTo(ex,y);ctx.stroke()}ctx.restore()
 }
-
 function drawSheet(){
  const p=worldToScreen(0,0),w=sheetCanvas.width*camera.zoom,h=sheetCanvas.height*camera.zoom;
  ctx.save();ctx.shadowColor="rgba(0,0,0,.25)";ctx.shadowBlur=24;ctx.shadowOffsetY=8;ctx.fillStyle="#fff";ctx.fillRect(p.x,p.y,w,h);ctx.shadowColor="transparent";ctx.drawImage(sheetCanvas,p.x,p.y,w,h);ctx.strokeStyle="#9ca3af";ctx.strokeRect(p.x,p.y,w,h);ctx.restore()
 }
-
 function rulerConfig(){
-  /*
-   * All ruler coordinates are derived from the output canvas pixel
-   * coordinate system. `p` is output pixels per selected ruler unit.
-   */
-  if(rulerUnit==="px"){
-    return {p:1,minor:10,medium:50,major:100,label:100,decimals:0,suffix:" px"};
-  }
-  if(rulerUnit==="mm"){
-    return {p:ppi/25.4,minor:1,medium:5,major:10,label:10,decimals:0,suffix:" mm"};
-  }
-  if(rulerUnit==="cm"){
-    return {p:ppi/2.54,minor:.1,medium:.5,major:1,label:1,decimals:0,suffix:" cm"};
-  }
-  return {p:ppi,minor:1/16,medium:1/4,major:1,label:1,decimals:0,suffix:" in"};
+ const p=getPPU();
+ if(!p||!Number.isFinite(p))return null;
+
+ /*
+  * p = screen/world pixels per currently selected ruler unit.
+  *
+  * The ruler coordinate itself is therefore expressed in the
+  * selected unit, not always in millimetres.
+  *
+  * cm  -> 1 major unit = 1 cm, minor = 1 mm
+  * inch -> 1 major unit = 1 inch, minor = 1/16 inch
+  * mm  -> 10 mm major labels, 1 mm minor ticks
+  */
+ if(rulerUnit==="cm"){
+   return {
+     p,
+     minor:0.1,
+     medium:0.5,
+     major:1,
+     label:1
+   };
+ }
+
+ if(rulerUnit==="in"){
+   return {
+     p,
+     minor:1/16,
+     medium:1/4,
+     major:1,
+     label:1
+   };
+ }
+
+ return {
+   p,
+   minor:1,
+   medium:5,
+   major:10,
+   label:10
+ };
 }
 
-function rulerFormat(v,cfg){
-  if(rulerUnit==="in"){
-    if(Math.abs(v-Math.round(v))<.0001)return String(Math.round(v));
-    return Number(v.toFixed(2)).toString();
-  }
-  return Number(v.toFixed(cfg.decimals)).toString();
+function rulerFormat(v){
+ const decimals=rulerUnit==="in"?3:rulerUnit==="cm"?1:0;
+ return Number(v.toFixed(decimals)).toString();
 }
 
-function drawRulerTop(){
-  const W=Math.max(1,vw-32),H=32,c=document.createElement("canvas");
-  c.width=Math.max(1,Math.round(W*dpr));c.height=Math.max(1,Math.round(H*dpr));
-  c.style.width=W+"px";c.style.height=H+"px";
-  const r=c.getContext("2d");r.setTransform(dpr,0,0,dpr,0,0);
-  r.fillStyle="#f8fafc";r.fillRect(0,0,W,H);
+function rulerTop(){
+ const W=Math.max(1,vw-32),H=32,c=document.createElement("canvas");
+ c.width=Math.max(1,Math.round(W*dpr));
+ c.height=Math.max(1,Math.round(H*dpr));
+ c.style.width=W+"px";
+ c.style.height=H+"px";
 
-  const cfg=rulerConfig();
-  const p=cfg.p;
-  const start=screenToWorld(32,0).x/p;
-  const end=screenToWorld(vw,0).x/p;
-  const first=Math.floor(start/cfg.minor)*cfg.minor;
-  const last=Math.ceil(end/cfg.minor)*cfg.minor;
-  const maxTicks=Math.min(5000,Math.ceil((last-first)/cfg.minor)+1);
+ const r=c.getContext("2d");
+ r.setTransform(dpr,0,0,dpr,0,0);
+ r.fillStyle="#f8fafc";
+ r.fillRect(0,0,W,H);
 
-  r.font="9px Arial";r.textAlign="center";r.textBaseline="top";
+ const cfg=rulerConfig();
+ if(!cfg)return topRuler.replaceChildren(c);
 
-  for(let n=0;n<maxTicks;n++){
-    const u=first+n*cfg.minor;
-    const x=worldToScreen(u*p,0).x-32;
-    if(x<-5||x>W+5)continue;
+ const {p,minor,medium,major,label}=cfg;
 
-    const major=Math.abs(u/cfg.major-Math.round(u/cfg.major))<1e-7;
-    const medium=!major&&Math.abs(u/cfg.medium-Math.round(u/cfg.medium))<1e-7;
-    const len=major?19:medium?13:7;
+ /*
+  * screenToWorld() returns canvas pixels.
+  * Dividing by p converts directly to the selected ruler unit.
+  */
+ const start=screenToWorld(32,0).x/p;
+ const end=screenToWorld(vw,0).x/p;
 
-    r.strokeStyle=major?"#475569":medium?"#64748b":"#94a3b8";
-    r.lineWidth=major?1.2:1;
-    r.beginPath();r.moveTo(Math.round(x)+.5,H);r.lineTo(Math.round(x)+.5,H-len);r.stroke();
+ const first=Math.floor(start/minor)*minor;
+ const last=Math.ceil(end/minor)*minor;
 
-    if(major){
-      r.fillStyle="#334155";
-      r.fillText(rulerFormat(u,cfg),x,2);
-    }
-  }
-  topRuler.replaceChildren(c);
+ r.textAlign="center";
+ r.textBaseline="top";
+ r.font="9px Arial";
+
+ const total=Math.ceil((last-first)/minor)+1;
+
+ for(let n=0;n<total&&n<4000;n++){
+   const u=first+n*minor;
+   const x=worldToScreen(u*p,0).x-32;
+
+   if(x<-4||x>W+4)continue;
+
+   const majorTick=Math.abs(u/major-Math.round(u/major))<0.00001;
+   const mediumTick=!majorTick &&
+     Math.abs(u/medium-Math.round(u/medium))<0.00001;
+
+   const len=majorTick?19:mediumTick?13:8;
+
+   r.strokeStyle=majorTick?"#475569":mediumTick?"#64748b":"#94a3b8";
+   r.lineWidth=majorTick?1.2:1;
+
+   r.beginPath();
+   r.moveTo(Math.round(x)+.5,H);
+   r.lineTo(Math.round(x)+.5,H-len);
+   r.stroke();
+
+   if(majorTick){
+     r.fillStyle="#475569";
+     r.fillText(rulerFormat(u),x,2);
+   }
+ }
+
+ topRuler.replaceChildren(c);
 }
 
-function drawRulerLeft(){
-  const W=32,H=Math.max(1,vh-32),c=document.createElement("canvas");
-  c.width=Math.max(1,Math.round(W*dpr));c.height=Math.max(1,Math.round(H*dpr));
-  c.style.width=W+"px";c.style.height=H+"px";
-  const r=c.getContext("2d");r.setTransform(dpr,0,0,dpr,0,0);
-  r.fillStyle="#f8fafc";r.fillRect(0,0,W,H);
+function rulerLeft(){
+ const W=32,H=Math.max(1,vh-32),c=document.createElement("canvas");
+ c.width=Math.max(1,Math.round(W*dpr));
+ c.height=Math.max(1,Math.round(H*dpr));
+ c.style.width=W+"px";
+ c.style.height=H+"px";
 
-  const cfg=rulerConfig();
-  const p=cfg.p;
-  const start=screenToWorld(0,32).y/p;
-  const end=screenToWorld(0,vh).y/p;
-  const first=Math.floor(start/cfg.minor)*cfg.minor;
-  const last=Math.ceil(end/cfg.minor)*cfg.minor;
-  const maxTicks=Math.min(5000,Math.ceil((last-first)/cfg.minor)+1);
+ const r=c.getContext("2d");
+ r.setTransform(dpr,0,0,dpr,0,0);
+ r.fillStyle="#f8fafc";
+ r.fillRect(0,0,W,H);
 
-  r.font="9px Arial";r.textAlign="center";r.textBaseline="middle";
+ const cfg=rulerConfig();
+ if(!cfg)return leftRuler.replaceChildren(c);
 
-  for(let n=0;n<maxTicks;n++){
-    const u=first+n*cfg.minor;
-    const y=worldToScreen(0,u*p).y-32;
-    if(y<-5||y>H+5)continue;
+ const {p,minor,medium,major}=cfg;
 
-    const major=Math.abs(u/cfg.major-Math.round(u/cfg.major))<1e-7;
-    const medium=!major&&Math.abs(u/cfg.medium-Math.round(u/cfg.medium))<1e-7;
-    const len=major?19:medium?13:7;
+ const start=screenToWorld(0,32).y/p;
+ const end=screenToWorld(0,vh).y/p;
 
-    r.strokeStyle=major?"#475569":medium?"#64748b":"#94a3b8";
-    r.lineWidth=major?1.2:1;
-    r.beginPath();r.moveTo(W,y+.5);r.lineTo(W-len,y+.5);r.stroke();
+ const first=Math.floor(start/minor)*minor;
+ const last=Math.ceil(end/minor)*minor;
 
-    if(major){
-      r.save();r.translate(9,y);r.rotate(-Math.PI/2);
-      r.fillStyle="#334155";r.fillText(rulerFormat(u,cfg),0,0);
-      r.restore();
-    }
-  }
-  leftRuler.replaceChildren(c);
+ r.textAlign="center";
+ r.textBaseline="middle";
+ r.font="9px Arial";
+
+ const total=Math.ceil((last-first)/minor)+1;
+
+ for(let n=0;n<total&&n<4000;n++){
+   const u=first+n*minor;
+   const y=worldToScreen(0,u*p).y-32;
+
+   if(y<-4||y>H+4)continue;
+
+   const majorTick=Math.abs(u/major-Math.round(u/major))<0.00001;
+   const mediumTick=!majorTick &&
+     Math.abs(u/medium-Math.round(u/medium))<0.00001;
+
+   const len=majorTick?19:mediumTick?13:8;
+
+   r.strokeStyle=majorTick?"#475569":mediumTick?"#64748b":"#94a3b8";
+   r.lineWidth=majorTick?1.2:1;
+
+   r.beginPath();
+   r.moveTo(W,y+.5);
+   r.lineTo(W-len,y+.5);
+   r.stroke();
+
+   if(majorTick){
+     r.save();
+     r.translate(9,y);
+     r.rotate(-Math.PI/2);
+     r.fillStyle="#475569";
+     r.fillText(rulerFormat(u),0,0);
+     r.restore();
+   }
+ }
+
+ leftRuler.replaceChildren(c);
 }
-
-function rulerTop(){drawRulerTop()}
-function rulerLeft(){drawRulerLeft()}
 
 function render(){
- ctx.setTransform(dpr,0,0,dpr,0,0);
- ctx.clearRect(0,0,vw,vh);
- ctx.fillStyle="#d1d5db";
- ctx.fillRect(0,0,vw,vh);
- drawGrid();
- const empty=!images.length;
- emptyState.classList.toggle("hidden",!empty);
- if(sheetCanvas)drawSheet();
- rulerTop();
- rulerLeft();
- setZoomDisplay();
+ ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,vw,vh);ctx.fillStyle="#d1d5db";ctx.fillRect(0,0,vw,vh);drawGrid();if(sheetCanvas)drawSheet();else{ctx.fillStyle="#64748b";ctx.font="14px Arial";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText("Upload image(s) to begin",vw/2,vh/2)}rulerTop();rulerLeft()
 }
 
 
@@ -686,7 +575,7 @@ viewport.addEventListener("wheel",e=>{canvasInteraction();e.preventDefault();con
 function center(a,b){return{x:(a.x+b.x)/2,y:(a.y+b.y)/2}}function dist(a,b){return Math.hypot(a.x-b.x,a.y-b.y)}
 function touchStart(){const p=[...pointers.values()];if(p.length===1)gesture={mode:"pan",center:{x:p[0].x,y:p[0].y},x:camera.x,y:camera.y};if(p.length===2){const c=center(p[0],p[1]),d=dist(p[0],p[1]),w=screenToWorld(c.x,c.y);gesture={mode:"pinch",d,z:camera.zoom,c,w,x:camera.x,y:camera.y}}}
 viewport.addEventListener("pointerdown",e=>{if(e.pointerType==="mouse")return;canvasInteraction();e.preventDefault();viewport.setPointerCapture(e.pointerId);pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});touchStart()},{passive:false});
-viewport.addEventListener("pointermove",e=>{if(e.pointerType==="mouse")return;const p=pointers.get(e.pointerId);if(!p)return;e.preventDefault();p.x=e.clientX;p.y=e.clientY;const a=[...pointers.values()];if(a.length===1&&gesture?.mode==="pan"){camera.x=gesture.x+a[0].x-gesture.center.x;camera.y=gesture.y+a[0].y-gesture.center.y;render()}else if(a.length===2&&gesture?.mode==="pinch"){const c=center(a[0],a[1]),z=clamp(gesture.z*dist(a[0],a[1])/gesture.d,MIN_ZOOM,MAX_ZOOM);camera.zoom=z;camera.x=c.x-gesture.w.x*z;camera.y=c.y-gesture.w.y*z;setZoomDisplay();render()}},{passive:false});
+viewport.addEventListener("pointermove",e=>{if(e.pointerType==="mouse")return;const p=pointers.get(e.pointerId);if(!p)return;e.preventDefault();p.x=e.clientX;p.y=e.clientY;const a=[...pointers.values()];if(a.length===1&&gesture?.mode==="pan"){camera.x=gesture.x+a[0].x-gesture.center.x;camera.y=gesture.y+a[0].y-gesture.center.y;render()}else if(a.length===2&&gesture?.mode==="pinch"){const c=center(a[0],a[1]),z=clamp(gesture.z*dist(a[0],a[1])/gesture.d,MIN_ZOOM,MAX_ZOOM);camera.zoom=z;camera.x=c.x-gesture.w.x*z;camera.y=c.y-gesture.w.y*z;zoomText.textContent=Math.round(z*100)+"%";render()}},{passive:false});
 function touchEnd(e){if(e.pointerType==="mouse")return;pointers.delete(e.pointerId);if(pointers.size===1)touchStart();else gesture=null}
 viewport.addEventListener("pointerup",touchEnd);viewport.addEventListener("pointercancel",touchEnd);
 
