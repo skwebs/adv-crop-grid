@@ -176,7 +176,7 @@ const ratioButtons=document.querySelectorAll(".ratioButton");
 const DEFAULT_PPI=300, PHOTO_W_MM=35, PHOTO_H_MM=45, MIN_ZOOM=.05, MAX_ZOOM=8;
 let ppi=DEFAULT_PPI;
 const PAPER_INCHES={A4:[8.27,11.69],"4x6":[4,6],"5x7":[5,7]};
-const layout={paper:"A4",landscape:false,slotColor:"#ffffff",gap:12};
+const layout={paper:"A4",landscape:false,slotColor:"#ffffff",gap:40};
 const camera={x:0,y:0,zoom:1};
 function setZoomDisplay(){zoomText.value=Math.round(camera.zoom*100)+"%"}
 let dpr=devicePixelRatio||1,vw=0,vh=0;
@@ -203,7 +203,7 @@ function resize(){
 }
 addEventListener("resize",resize);
 
-function paper(){const [wIn,hIn]=PAPER_INCHES[layout.paper]||PAPER_INCHES.A4;const w=Math.round(wIn*ppi),h=Math.round(hIn*ppi);return layout.landscape?{width:h,height:w}:{width:w,height:h}}
+function paper(){const [wIn,hIn]=PAPER_INCHES[layout.paper];const w=Math.round(wIn*ppi),h=Math.round(hIn*ppi);return layout.landscape?{width:h,height:w}:{width:w,height:h}}
 function getPPU(){return rulerUnit==="cm"?ppi/2.54:rulerUnit==="mm"?ppi/25.4:ppi}
 function rulerStep(){const target=80/camera.zoom/getPPU();for(const x of [.01,.02,.05,.1,.2,.25,.5,1,2,5,10,20,50,100,200,500])if(x>=target)return x;return 500}
 function fmt(v){return Number(v.toFixed(rulerUnit==="mm"?1:2)).toString()}
@@ -360,161 +360,51 @@ cropApply.onclick=()=>{
 }
 
 function drawCell(c,im,x,y,w,h){
- c.fillStyle=layout.slotColor;
- c.fillRect(x,y,w,h);
- c.drawImage(im.croppedCanvas,x,y,w,h);
- c.strokeStyle="#000";
- c.lineWidth=5;
- c.strokeRect(x,y,w,h);
+ c.fillStyle=layout.slotColor;c.fillRect(x,y,w,h);c.drawImage(im.croppedCanvas,x,y,w,h);c.strokeStyle="#000";c.lineWidth=5;c.strokeRect(x,y,w,h)
 }
-
-/*
- * Render one image grid using the exact same fixed-size cell logic
- * regardless of whether the app has one image or multiple images.
- *
- * IMPORTANT:
- * - No image is resized to fill the page.
- * - The crop/print dimensions remain fixed.
- * - Page orientation only changes the page dimensions.
- * - A grid that reaches the page edge is simply clipped by the
- *   normal page-fit checks, exactly like single-image mode.
- */
-function renderImageGrid(c,im,startX,startY,p){
- const d=dims(im);
- const gap=layout.gap;
- const margin=gap/2;
- let renderedRows=0;
-
- for(let r=0;r<im.rows;r++){
-   const y=startY+r*(d.height+gap);
-   if(y+ d.height > p.height-margin)break;
-
-   let renderedCols=0;
-
-   for(let col=0;col<im.columns;col++){
-     const x=startX+col*(d.width+gap);
-     if(x+d.width>p.width-margin)break;
-
-     drawCell(c,im,x,y,d.width,d.height);
-     renderedCols++;
-   }
-
-   if(renderedCols>0)renderedRows++;
- }
-
- return {
-   width:renderedRows?Math.min(
-     im.columns*d.width+(im.columns-1)*gap,
-     Math.max(0,p.width-margin-startX)
-   ):0,
-   height:renderedRows
-     ? renderedRows*d.height+(renderedRows-1)*gap
-     :0,
-   cellWidth:d.width,
-   cellHeight:d.height
- };
-}
-
 function generateSheet(){
  const visible=images.filter(i=>i.visible&&i.croppedCanvas);
-
- if(!visible.length){
-   sheetCanvas=null;
-   hasSheet=false;
-   render();
-   updateStatus();
-   return;
- }
-
- const old={z:camera.zoom,x:camera.x,y:camera.y};
- const p=paper();
- const gap=layout.gap;
- const margin=gap/2;
-
- sheetCanvas=document.createElement("canvas");
- sheetCanvas.width=p.width;
- sheetCanvas.height=p.height;
-
- const c=sheetCanvas.getContext("2d");
- c.imageSmoothingEnabled=true;
- c.imageSmoothingQuality="high";
-
- c.fillStyle="#fff";
- c.fillRect(0,0,p.width,p.height);
-
- /*
-  * SINGLE IMAGE:
-  * Preserve the original behavior exactly: start at the page
-  * margin and render fixed-size cells only where they fit.
-  */
+ if(!visible.length){sheetCanvas=null;hasSheet=false;render();updateStatus();return}
+ const old={z:camera.zoom,x:camera.x,y:camera.y},p=paper(),gap=layout.gap,margin=gap/2;
+ sheetCanvas=document.createElement("canvas");sheetCanvas.width=p.width;sheetCanvas.height=p.height;const c=sheetCanvas.getContext("2d");
+ c.fillStyle="#fff";c.fillRect(0,0,p.width,p.height);
  if(visible.length===1){
-   renderImageGrid(c,visible[0],margin,margin,p);
+  const im=visible[0],d=dims(im);
+  for(let r=0;r<im.rows;r++)for(let col=0;col<im.columns;col++){const x=margin+col*(d.width+gap),y=margin+r*(d.height+gap);if(x+d.width<=p.width&&y+d.height<=p.height)drawCell(c,im,x,y,d.width,d.height)}
  }else{
-   /*
-    * MULTIPLE IMAGE:
-    * This is only an extension of the single-image renderer.
-    * Every image gets the same fixed cell dimensions and the same
-    * rows × columns logic. We only add a simple block-flow
-    * positioner so several image grids can share the page.
-    */
-   let x=margin;
-   let y=margin;
-   let currentRowHeight=0;
+  let cx=margin,cy=margin,rowH=0;
+  for(const im of visible){
+   const d=dims(im);
+   const bw=im.columns*d.width+(im.columns-1)*gap;
+   const bh=im.rows*d.height+(im.rows-1)*gap;
+   const availableW=p.width-2*margin;
+   const availableH=p.height-2*margin;
 
-   for(const im of visible){
-     const d=dims(im);
+   // Never stretch or clip an image grid to the page. If a complete
+   // requested block cannot fit, start a new block row; if it is still
+   // physically larger than the page, skip it rather than rendering it
+   // as a page-filling/overflowing image.
+   if(bw>availableW||bh>availableH)continue;
 
-     const requestedWidth=
-       im.columns*d.width+(im.columns-1)*gap;
-
-     const requestedHeight=
-       im.rows*d.height+(im.rows-1)*gap;
-
-     /*
-      * If this block cannot start in the remaining horizontal
-      * space, start a new block row.
-      */
-     if(
-       x!==margin &&
-       x+requestedWidth>p.width-margin
-     ){
-       x=margin;
-       y+=currentRowHeight+gap;
-       currentRowHeight=0;
-     }
-
-     /*
-      * Render the image using the exact same fixed-size cells
-      * as single-image mode. Never stretch the image/grid to
-      * fill the page.
-      */
-     const result=renderImageGrid(c,im,x,y,p);
-
-     /*
-      * Keep block flow based on the requested physical block,
-      * not on a resized version of the image.
-      */
-     if(result.width>0&&result.height>0){
-       x+=requestedWidth+gap;
-       currentRowHeight=Math.max(
-         currentRowHeight,
-         Math.min(requestedHeight,p.height-y-margin)
-       );
-     }
+   if(cx!==margin&&cx+bw>p.width-margin){
+     cx=margin;
+     cy+=rowH+gap;
+     rowH=0;
    }
- }
 
- if(!hasSheet){
-   hasSheet=true;
-   fit();
- }else{
-   camera.zoom=old.z;
-   camera.x=old.x;
-   camera.y=old.y;
-   render();
+   if(cy+bh<=p.height-margin){
+    for(let r=0;r<im.rows;r++){
+     for(let col=0;col<im.columns;col++){
+      const x=cx+col*(d.width+gap),y=cy+r*(d.height+gap);
+      drawCell(c,im,x,y,d.width,d.height);
+     }
+    }
+    cx+=bw+gap;
+    rowH=Math.max(rowH,bh);
+   }
+  }
  }
-
- updateStatus();
+ if(!hasSheet){hasSheet=true;fit()}else{camera.zoom=old.z;camera.x=old.x;camera.y=old.y;render()}updateStatus()
 }
 function schedule(){clearTimeout(updateTimer);updateTimer=setTimeout(generateSheet,120)}
 
